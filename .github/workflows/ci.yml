@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      # The plugin runs against a sibling bunnyland-server checkout: tests/conftest.py puts
+      # ../bunnyland-server/src on sys.path, and its virtualenv provides bunnyland, relics,
+      # ruff, and pytest. No container build.
+      - name: Checkout bunnyland-server
+        uses: actions/checkout@v4
+        with:
+          repository: thalismind/bunnyland-server
+          ref: main
+          path: bunnyland-server
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Ruff (lint)
+        working-directory: plugin/server
+        run: uv run --project ../../bunnyland-server ruff check --output-format=github src tests
+
+      - name: Pytest (test report + coverage)
+        working-directory: plugin/server
+        run: |
+          mkdir -p reports
+          uv run --project ../../bunnyland-server -m pytest \
+            --junit-xml=reports/junit.xml \
+            --cov=src --cov-report=xml:reports/coverage.xml --cov-report=term \
+            | tee reports/pytest.txt
+          echo "### Test summary" >> "$GITHUB_STEP_SUMMARY"
+          tail -n 1 reports/pytest.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: plugin/server/reports/
+          if-no-files-found: warn
