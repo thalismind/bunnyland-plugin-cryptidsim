@@ -30,11 +30,15 @@ from bunnyland.core.handlers import (
     require_entity,
 )
 
+from .bait import bait_bonus
 from .cases import record_sighting
 from .components import CryptidComponent, SightingComponent
 from .conditions import is_concealing, room_light_level
 from .events import SightingRecordedEvent
+from .flap import flap_clarity_bonus
+from .lairs import lair_clarity_bonus
 from .spatial import room_of
+from .synergy import luck_clarity_bias, scent_clarity_bonus
 
 #: A sighting at or above this clarity is a "clear look" that can build a case; below it the
 #: evidence is just another blurry, unconfirmed report.
@@ -53,21 +57,39 @@ def sighting_clarity(
     elusiveness: float,
     light_level: float,
     distance: int = 0,
+    bonus: float = 0.0,
 ) -> float:
     """Deterministic clarity (0..1) for a sighting attempt.
 
     Blends the creature's elusiveness (blurs the look), the room's light (a distant shape in
-    good light reads clearer), the range, and a stable per-attempt jitter derived from a
-    ``hashlib`` digest — never :mod:`random` or :mod:`time`, so it survives a
-    ``PYTHONHASHSEED`` sweep unchanged.
+    good light reads clearer), the range, a stable per-attempt jitter derived from a
+    ``hashlib`` digest, and an environmental ``bonus`` (bait, lair ground, a flap, optional
+    synergies) — never :mod:`random` or :mod:`time`, so it survives a ``PYTHONHASHSEED`` sweep
+    unchanged.
     """
     seed = f"{character_id}|{cryptid_id}|{epoch}".encode()
     jitter = hashlib.sha256(seed).digest()[0] / 255.0
     base = max(0.0, 1.0 - elusiveness)
     visibility = 0.2 + 0.8 * _clamp01(light_level)
     distance_factor = 1.0 / (1.0 + max(0, distance))
-    raw = base * visibility * distance_factor * (0.4 + 0.6 * jitter)
+    raw = base * visibility * distance_factor * (0.4 + 0.6 * jitter) + bonus
     return round(_clamp01(raw), 3)
+
+
+def environment_clarity_bonus(world, character_id, cryptid, room) -> float:
+    """Summed clarity bonus from bait, lair ground, a live flap, and optional synergies.
+
+    Reused by both the live ``sight`` verb and the passive camera trap so a stakeout pays off
+    the same way however the still is taken. Pure and deterministic: every term is a function
+    of world state, never :mod:`random`.
+    """
+    habitat = cryptid.get_component(CryptidComponent).habitat
+    total = bait_bonus(world, room, habitat)
+    total += lair_clarity_bonus(world, cryptid, room)
+    total += flap_clarity_bonus(world)
+    total += scent_clarity_bonus(world, room)
+    total += luck_clarity_bias(world, character_id)
+    return total
 
 
 def is_clear(clarity: float) -> bool:
@@ -111,6 +133,7 @@ class SightCryptidHandler:
             ctx.epoch,
             elusiveness=details.elusiveness,
             light_level=room_light_level(room),
+            bonus=environment_clarity_bonus(ctx.world, character_id, cryptid, room),
         )
         clear = is_clear(clarity)
         self._spawn_sighting(ctx, character_id, cryptid_id, details, clarity, clear)
@@ -180,6 +203,7 @@ __all__ = [
     "SIGHT_ACTION_HANDLERS",
     "SIGHT_DEF",
     "SightCryptidHandler",
+    "environment_clarity_bonus",
     "is_clear",
     "sighting_clarity",
 ]
