@@ -4,7 +4,7 @@ A **flap** is a surge of cryptid activity — the weeks when every farmhand swea
 *something*. This module registers that surge as a **core storyteller incident** rather than
 inventing a private one: when sighting buzz pushes pressure over the line under cover of night,
 :class:`CryptidFlapConsequence` manifests a bold new creature into an occupied room and stamps
-the moment with the core :class:`~bunnyland.mechanics.storyteller.IncidentComponent`
+the moment with the core :class:`~bunnyland.foundation.storyteller.mechanics.IncidentComponent`
 (``kind="cryptid_flap"``), so it shows up in the storyteller prompt like any other world event.
 
 Pacing mirrors the core storyteller (an interval and a next-due epoch on the world clock) and
@@ -32,7 +32,7 @@ from bunnyland.core import (
 from bunnyland.core.components import DeadComponent, SuspendedComponent
 from bunnyland.core.ecs import replace_component
 from bunnyland.core.events import DomainEvent, EventVisibility, event_base
-from bunnyland.mechanics.storyteller import IncidentComponent
+from bunnyland.foundation.storyteller.mechanics import IncidentComponent
 from pydantic.dataclasses import dataclass
 from relics import Component, Entity, World
 

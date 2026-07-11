@@ -40,9 +40,7 @@ def test_scent_bonus_active_when_wildsim_present(monkeypatch):
     actor = WorldActor()
     bare = spawn_entity(actor.world, [RoomComponent(title="Clearing")])
     assert synergy.scent_clarity_bonus(actor.world, bare) == 0.0  # no trail on this room
-    trail = spawn_entity(
-        actor.world, [RoomComponent(title="Bog"), _FakeScentTrail(strength=2.0)]
-    )
+    trail = spawn_entity(actor.world, [RoomComponent(title="Bog"), _FakeScentTrail(strength=2.0)])
     assert round(synergy.scent_clarity_bonus(actor.world, trail), 6) == 0.1
     strong = spawn_entity(
         actor.world, [RoomComponent(title="Fen"), _FakeScentTrail(strength=100.0)]

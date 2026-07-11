@@ -16,7 +16,7 @@ from bunnyland.core.commands import CommandCost, Lane, build_submitted_command
 from bunnyland.core.components import DeadComponent, WorldClockComponent
 from bunnyland.core.ecs import replace_component
 from bunnyland.core.handlers import HandlerContext
-from bunnyland.mechanics.persona import GoalComponent
+from bunnyland.foundation.persona.mechanics import GoalComponent
 
 from bunnyland_cryptidsim.bait import spawn_bait
 from bunnyland_cryptidsim.camera_traps import (
@@ -92,9 +92,7 @@ def test_set_camera_trap_happy_and_aspires_to_renown():
 
 def test_set_camera_trap_rejects_invalid_character():
     actor = WorldActor()
-    result = SetCameraTrapHandler().execute(
-        HandlerContext(world=actor.world, epoch=0), _cmd("???")
-    )
+    result = SetCameraTrapHandler().execute(HandlerContext(world=actor.world, epoch=0), _cmd("???"))
     assert not result.ok and result.reason == "invalid character id"
 
 

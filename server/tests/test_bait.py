@@ -143,9 +143,7 @@ def test_place_bait_defaults_blank_payload():
 
 def test_place_bait_rejects_invalid_character():
     actor = WorldActor()
-    result = PlaceBaitHandler().execute(
-        HandlerContext(world=actor.world, epoch=0), _cmd("???", {})
-    )
+    result = PlaceBaitHandler().execute(HandlerContext(world=actor.world, epoch=0), _cmd("???", {}))
     assert not result.ok and result.reason == "invalid character id"
 
 

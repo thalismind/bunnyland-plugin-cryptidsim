@@ -14,11 +14,11 @@ from bunnyland.core import (
 from bunnyland.core.commands import CommandCost, Lane, build_submitted_command
 from bunnyland.core.events import EventVisibility, event_base
 from bunnyland.core.handlers import HandlerContext
+from bunnyland.foundation.history.mechanics import WorldHistoryRecordComponent
+from bunnyland.foundation.persona.mechanics import GoalComponent
 from bunnyland.imagegen.components import ImageRequestComponent
-from bunnyland.mechanics.history import WorldHistoryRecordComponent
-from bunnyland.mechanics.lifesim import ReputationComponent
-from bunnyland.mechanics.persona import GoalComponent
 from bunnyland.prompts import ComponentPromptContext, PromptPerspective
+from bunnyland.simpacks.lifesim.mechanics import ReputationComponent
 
 from bunnyland_cryptidsim.cases import CryptidConfirmationConsequence, record_sighting
 from bunnyland_cryptidsim.components import CryptidCaseComponent
@@ -273,9 +273,7 @@ def test_install_credibility_end_to_end_over_the_bus():
 
     from bunnyland.core.ecs import replace_component
 
-    replace_component(
-        case, _replace(case.get_component(CryptidCaseComponent), clear_count=2)
-    )
+    replace_component(case, _replace(case.get_component(CryptidCaseComponent), clear_count=2))
     events = CryptidConfirmationConsequence().process(actor.world, 0)
     for event in events:
         asyncio.run(actor.bus.publish(event))

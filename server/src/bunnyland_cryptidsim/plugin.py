@@ -35,7 +35,7 @@ from .credibility import (
     credibility_fragments,
     install_credibility,
 )
-from .enrichment import CryptidWorldgenHook
+from .enrichment import CryptidGenerationEnricher
 from .events import CryptidConfirmedEvent, SightingRecordedEvent
 from .flap import (
     CryptidFlapEndedEvent,
@@ -119,7 +119,7 @@ def plugin() -> Plugin:
         ),
         content=ContentContribution(
             prompt_fragments=(cryptidsim_fragments, credibility_fragments),
-            worldgen_hooks=(CryptidWorldgenHook,),
+            generation_enrichers=(CryptidGenerationEnricher(),),
         ),
     )
 

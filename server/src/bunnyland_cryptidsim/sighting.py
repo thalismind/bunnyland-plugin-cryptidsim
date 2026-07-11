@@ -118,9 +118,10 @@ class SightCryptidHandler:
             return rejected("the cryptid is not within range")
         if not cryptid.has_component(CryptidComponent):
             return rejected("that is not a cryptid")
-        if character.has_component(PerceptionComponent) and not character.get_component(
-            PerceptionComponent
-        ).active:
+        if (
+            character.has_component(PerceptionComponent)
+            and not character.get_component(PerceptionComponent).active
+        ):
             return rejected("you cannot make anything out")
         room = room_of(ctx.world, character_id)
         if not is_concealing(ctx.world, room):

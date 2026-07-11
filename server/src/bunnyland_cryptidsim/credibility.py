@@ -34,13 +34,13 @@ from bunnyland.core.handlers import (
     require_character,
     require_entity,
 )
+from bunnyland.foundation.history.mechanics import record_world_history
+from bunnyland.foundation.persona.mechanics import GoalComponent
+from bunnyland.foundation.social.mechanics import adjust_bond, bond_between
 from bunnyland.imagegen.components import ImageRequestComponent
 from bunnyland.imagegen.spec import ImagePurpose
-from bunnyland.mechanics.history import record_world_history
-from bunnyland.mechanics.lifesim import ReputationComponent
-from bunnyland.mechanics.persona import GoalComponent
-from bunnyland.mechanics.social import adjust_bond, bond_between
 from bunnyland.prompts import ComponentPromptContext
+from bunnyland.simpacks.lifesim.mechanics import ReputationComponent
 from pydantic.dataclasses import dataclass
 from relics import Component, Entity, World
 
@@ -74,8 +74,7 @@ class CredibilityComponent(Component):
         tail = " You are a renowned cryptozoologist." if self.renowned else ""
         plural = "cryptid" if self.confirmations == 1 else "cryptids"
         return (
-            f"You have confirmed {self.confirmations} {plural} "
-            f"(credibility {self.score:g}).{tail}",
+            f"You have confirmed {self.confirmations} {plural} (credibility {self.score:g}).{tail}",
         )
 
 
@@ -97,9 +96,7 @@ def aspire_to_renown(character: Entity) -> None:
         goals = character.get_component(GoalComponent).active_goals
         if RENOWN_GOAL in goals:
             return
-        replace_component(
-            character, GoalComponent(active_goals=(*goals, RENOWN_GOAL))
-        )
+        replace_component(character, GoalComponent(active_goals=(*goals, RENOWN_GOAL)))
     else:
         character.add_component(GoalComponent(active_goals=(RENOWN_GOAL,)))
 

@@ -8,7 +8,7 @@ around. The sighting verb enforces it, which is what makes time and weather matt
 Time and weather come from the world clock: :class:`TimeOfDayComponent` /
 :class:`WeatherComponent` are read directly when the environment consequence has already set
 them, and otherwise derived from the clock's ``game_time_seconds`` via
-:func:`~bunnyland.mechanics.environment.time_of_day` / ``weather_for`` — so a bare
+:func:`~bunnyland.foundation.environment.mechanics.time_of_day` / ``weather_for`` — so a bare
 ``WorldActor`` (whose clock reads ``0`` -> ``night``) is already concealing without needing a
 tick to run first.
 """
@@ -16,7 +16,7 @@ tick to run first.
 from __future__ import annotations
 
 from bunnyland.core.components import LightComponent, WorldClockComponent
-from bunnyland.mechanics.environment import (
+from bunnyland.foundation.environment.mechanics import (
     TimeOfDayComponent,
     WeatherComponent,
     time_of_day,

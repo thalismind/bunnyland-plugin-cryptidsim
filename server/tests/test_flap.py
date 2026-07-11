@@ -15,7 +15,7 @@ from bunnyland.core import (
 )
 from bunnyland.core.components import DeadComponent, SuspendedComponent, WorldClockComponent
 from bunnyland.core.ecs import replace_component
-from bunnyland.mechanics.environment import TimeOfDayComponent, WeatherComponent
+from bunnyland.foundation.environment.mechanics import TimeOfDayComponent, WeatherComponent
 
 from bunnyland_cryptidsim.components import SightingComponent
 from bunnyland_cryptidsim.flap import (

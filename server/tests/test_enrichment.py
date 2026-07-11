@@ -1,86 +1,45 @@
-from __future__ import annotations
-
 import asyncio
 
-from bunnyland.core import (
-    CharacterComponent,
-    IdentityComponent,
-    WorldActor,
-    spawn_entity,
-)
-from bunnyland.core.components import GenerationIntentComponent
-from bunnyland.core.events import CharacterGeneratedEvent, event_base
-from bunnyland.plugins import apply_plugins, load_modules
+from bunnyland.core import WorldActor
+from bunnyland.plugins import apply_plugins
+from bunnyland.worldgen import CharacterSpec, RoomSpec, WorldProposal, instantiate
 
 from bunnyland_cryptidsim import CryptidComponent
+from bunnyland_cryptidsim.plugin import bunnyland_plugins as _plugins
 
 
-def _actor():
+def _character(*, key="creature", description="", traits=()):
     actor = WorldActor()
-    apply_plugins(load_modules(["bunnyland_cryptidsim"]), actor)
-    return actor
-
-
-def _publish(actor, event):
-    asyncio.run(actor.bus.publish(event))
-
-
-def _character(actor, *, tags=(), description="", character_key="npc"):
-    entity = spawn_entity(
-        actor.world, [IdentityComponent(name="npc", kind="character"), CharacterComponent()]
+    apply_plugins(_plugins(), actor)
+    result = asyncio.run(
+        instantiate(
+            actor,
+            WorldProposal(
+                seed="seed",
+                rooms=[RoomSpec(key="room", title="Room")],
+                characters=[
+                    CharacterSpec(
+                        key=key, name=key, room_key="room", description=description, traits=traits
+                    )
+                ],
+            ),
+        )
     )
-    event = CharacterGeneratedEvent(
-        **event_base(0),
-        seed="seed",
-        entity_id=str(entity.id),
-        entity_key="npc",
-        entity_kind="character",
-        generation=GenerationIntentComponent(tags=tuple(tags), description=description),
-        character_key=character_key,
-        room_id="room_1",
-    )
-    _publish(actor, event)
-    return entity
+    return actor.world.get_entity(result.characters[key])
 
 
-def test_cryptid_tag_marks_a_generated_creature():
-    actor = _actor()
-    creature = _character(actor, tags=("cryptid", "hairy hominid"), character_key="sasquatch")
-    assert creature.has_component(CryptidComponent)
-    assert creature.get_component(CryptidComponent).name == "sasquatch"
+def test_cryptid_hints_mark_generated_creatures():
+    assert _character(key="sasquatch").has_component(CryptidComponent)
+    assert _character(description="a rumored lake monster").has_component(CryptidComponent)
 
 
-def test_cryptid_detected_from_description_text():
-    actor = _actor()
-    creature = _character(actor, description="a rumored lake monster that surfaces at dusk")
-    assert creature.has_component(CryptidComponent)
+def test_plain_creature_is_ignored():
+    assert not _character(key="deer").has_component(CryptidComponent)
 
 
-def test_benign_character_is_not_marked():
-    actor = _actor()
-    villager = _character(actor, tags=("farmer", "friendly"), description="a cheerful baker")
-    assert not villager.has_component(CryptidComponent)
-
-
-def test_elusive_hint_raises_elusiveness():
-    actor = _actor()
-    creature = _character(actor, tags=("cryptid", "elusive"))
-    assert creature.get_component(CryptidComponent).elusiveness == 0.85
-
-
-def test_plain_cryptid_keeps_default_elusiveness():
-    actor = _actor()
-    creature = _character(actor, tags=("cryptid",))
-    assert creature.get_component(CryptidComponent).elusiveness == 0.6
-
-
-def test_habitat_is_inferred_from_biome_words():
-    actor = _actor()
-    creature = _character(actor, description="a cryptid haunting the deep swamp")
-    assert creature.get_component(CryptidComponent).habitat == "swamp"
-
-
-def test_unknown_biome_falls_back_to_wilderness():
-    actor = _actor()
-    creature = _character(actor, tags=("cryptid",))
-    assert creature.get_component(CryptidComponent).habitat == "wilderness"
+def test_elusiveness_and_habitat_are_inferred():
+    elusive = _character(key="mystery", description="an elusive cryptid in the swamp")
+    component = elusive.get_component(CryptidComponent)
+    assert component.elusiveness == 0.85
+    assert component.habitat == "swamp"
+    assert _character(traits=("cryptid",)).get_component(CryptidComponent).habitat == "wilderness"

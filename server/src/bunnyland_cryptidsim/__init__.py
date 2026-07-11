@@ -62,7 +62,7 @@ from .credibility import (
     record_confirmation_photo,
     standing_toward,
 )
-from .enrichment import CryptidWorldgenHook
+from .enrichment import CryptidGenerationEnricher
 from .events import CryptidConfirmedEvent, SightingRecordedEvent
 from .flap import (
     CryptidFlapConsequence,
@@ -146,7 +146,7 @@ __all__ = [
     "CryptidFlapStartedEvent",
     "CryptidProwledEvent",
     "CryptidRenownReactor",
-    "CryptidWorldgenHook",
+    "CryptidGenerationEnricher",
     "DoubtCryptidHandler",
     "HauntsLair",
     "LairComponent",
