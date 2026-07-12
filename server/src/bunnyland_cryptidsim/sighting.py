@@ -17,8 +17,8 @@ from __future__ import annotations
 import hashlib
 
 from bunnyland.core import reachable_ids, spawn_entity
-from bunnyland.core.actions import ActionArgument, ActionDefinition
-from bunnyland.core.commands import CommandCost, Lane, SubmittedCommand
+from bunnyland.core.actions import ActionArgument, ActionDefinition, ActionEffort, effort_cost
+from bunnyland.core.commands import Lane, SubmittedCommand
 from bunnyland.core.components import PerceptionComponent
 from bunnyland.core.events import EventVisibility
 from bunnyland.core.handlers import (
@@ -183,7 +183,7 @@ SIGHT_DEF = ActionDefinition(
     title="Sight cryptid",
     description="Investigate a cryptid in your room and record a sighting.",
     lane=Lane.WORLD,
-    cost=CommandCost(action=1),
+    cost=effort_cost(action=ActionEffort.ROUTINE),
     arguments={
         "cryptid_id": ActionArgument(
             title="Cryptid",

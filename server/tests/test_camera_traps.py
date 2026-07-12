@@ -31,9 +31,11 @@ from bunnyland_cryptidsim.camera_traps import (
     spawn_camera_trap,
 )
 from bunnyland_cryptidsim.cases import CryptidCaseComponent
-from bunnyland_cryptidsim.components import SightingComponent
+from bunnyland_cryptidsim.components import CryptidComponent, SightingComponent
+from bunnyland_cryptidsim.conditions import room_light_level
 from bunnyland_cryptidsim.credibility import RENOWN_GOAL
 from bunnyland_cryptidsim.prefabs import spawn_cryptid
+from bunnyland_cryptidsim.sighting import environment_clarity_bonus, sighting_clarity
 
 NOON_CLEAR = 12 * 3600
 
@@ -138,25 +140,27 @@ def test_camera_captures_cryptid_at_night_and_files_a_case():
 
 
 def test_camera_bait_in_room_raises_capture_clarity():
-    room_a = WorldActor()
-    plain_room = _room(room_a.world)
-    inv_a = _character(room_a.world, plain_room)
-    spawn_cryptid(
-        room_a.world, room_id=plain_room.id, name="mothman", elusiveness=0.3, habitat="swamp"
+    actor = WorldActor()
+    room = _room(actor.world)
+    investigator = _character(actor.world, room)
+    cryptid = spawn_cryptid(
+        actor.world, room_id=room.id, name="mothman", elusiveness=0.3, habitat="swamp"
     )
-    spawn_camera_trap(room_a.world, room_id=plain_room.id, placed_by=str(inv_a.id))
-    plain = CameraTrapConsequence().process(room_a.world, 100)[0].clarity
-
-    room_b = WorldActor()
-    baited_room = _room(room_b.world)
-    inv_b = _character(room_b.world, baited_room)
-    spawn_cryptid(
-        room_b.world, room_id=baited_room.id, name="mothman", elusiveness=0.3, habitat="swamp"
+    spawn_bait(actor.world, room_id=room.id, habitat="swamp", potency=1.0)
+    camera = spawn_camera_trap(
+        actor.world, room_id=room.id, placed_by=str(investigator.id)
     )
-    spawn_bait(room_b.world, room_id=baited_room.id, habitat="swamp", potency=1.0)
-    spawn_camera_trap(room_b.world, room_id=baited_room.id, placed_by=str(inv_b.id))
-    baited = CameraTrapConsequence().process(room_b.world, 100)[0].clarity
+    baited = CameraTrapConsequence().process(actor.world, 100)[0].clarity
+    details = cryptid.get_component(CryptidComponent)
+    plain = sighting_clarity(
+        str(camera.id),
+        str(cryptid.id),
+        100,
+        elusiveness=details.elusiveness,
+        light_level=room_light_level(room),
+    )
 
+    assert environment_clarity_bonus(actor.world, investigator.id, cryptid, room) > 0
     assert baited > plain
 
 

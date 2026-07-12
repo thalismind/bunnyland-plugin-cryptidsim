@@ -19,8 +19,8 @@ from bunnyland.core import (
     PortableComponent,
     spawn_entity,
 )
-from bunnyland.core.actions import ActionArgument, ActionDefinition
-from bunnyland.core.commands import CommandCost, Lane, SubmittedCommand
+from bunnyland.core.actions import ActionArgument, ActionDefinition, ActionEffort, effort_cost
+from bunnyland.core.commands import Lane, SubmittedCommand
 from bunnyland.core.ecs import contents
 from bunnyland.core.events import DomainEvent, EventVisibility
 from bunnyland.core.handlers import (
@@ -166,7 +166,7 @@ PLACE_BAIT_DEF = ActionDefinition(
     title="Place bait",
     description="Set out bait in your room to lure an elusive creature into the open.",
     lane=Lane.WORLD,
-    cost=CommandCost(action=1),
+    cost=effort_cost(action=ActionEffort.ROUTINE),
     arguments={
         "kind": ActionArgument(
             title="Bait",

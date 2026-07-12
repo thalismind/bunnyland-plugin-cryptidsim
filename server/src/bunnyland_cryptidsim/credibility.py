@@ -21,8 +21,8 @@ from __future__ import annotations
 from dataclasses import replace
 
 from bunnyland.core import contents
-from bunnyland.core.actions import ActionArgument, ActionDefinition
-from bunnyland.core.commands import CommandCost, Lane, SubmittedCommand
+from bunnyland.core.actions import ActionArgument, ActionDefinition, ActionEffort, effort_cost
+from bunnyland.core.commands import Lane, SubmittedCommand
 from bunnyland.core.components import CharacterComponent
 from bunnyland.core.ecs import parse_entity_id, replace_component
 from bunnyland.core.events import DomainEvent, EventVisibility
@@ -268,7 +268,7 @@ DOUBT_CRYPTID_DEF = ActionDefinition(
     title="Doubt cryptid",
     description="Publicly dispute a claimant's unconfirmed cryptid case.",
     lane=Lane.WORLD,
-    cost=CommandCost(action=1),
+    cost=effort_cost(action=ActionEffort.ROUTINE),
     arguments={
         "investigator_id": ActionArgument(
             title="Claimant",
