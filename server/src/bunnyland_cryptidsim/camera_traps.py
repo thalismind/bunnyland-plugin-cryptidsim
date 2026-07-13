@@ -34,17 +34,19 @@ from bunnyland.core.events import DomainEvent, EventVisibility, event_base
 from bunnyland.core.handlers import (
     HandlerContext,
     HandlerResult,
-    ok,
+    planned,
     rejected,
     require_character,
 )
+from bunnyland.core.mutations import AddEdge, AddEntity, EntityReference, MutationPlan, SetComponent
+from bunnyland.foundation.persona.mechanics import GoalComponent
 from pydantic.dataclasses import dataclass
 from relics import Component, Entity, World
 
 from .cases import record_sighting
 from .components import CryptidComponent, SightingComponent
 from .conditions import is_concealing, room_light_level
-from .credibility import aspire_to_renown
+from .credibility import RENOWN_GOAL
 from .sighting import environment_clarity_bonus, is_clear, sighting_clarity
 from .spatial import room_of
 
@@ -219,24 +221,50 @@ class SetCameraTrapHandler:
         room = room_of(ctx.world, character_id)
         if room is None:
             return rejected("you have nowhere to set a camera trap")
-        camera = spawn_camera_trap(
-            ctx.world,
-            room_id=room.id,
-            placed_by=str(character_id),
-            epoch=ctx.epoch,
+        camera = EntityReference()
+        goal = (
+            character.get_component(GoalComponent)
+            if character.has_component(GoalComponent)
+            else GoalComponent()
         )
-        # Chasing renown is a persona goal an investigator picks up the moment they set traps.
-        aspire_to_renown(character)
-        return ok(
-            CameraTrapSetEvent(
+        goals = goal.active_goals
+        operations = [
+            AddEntity(
+                (
+                    IdentityComponent(
+                        name="camera trap",
+                        kind="item",
+                        tags=("cryptidsim", "camera-trap"),
+                    ),
+                    PortableComponent(can_pick_up=True),
+                    CameraTrapComponent(
+                        placed_by=str(character_id),
+                        deployed_at_epoch=ctx.epoch,
+                        cooldown_seconds=DEFAULT_COOLDOWN_SECONDS,
+                    ),
+                ),
+                reference=camera,
+            ),
+            AddEdge(room.id, camera, Contains(mode=ContainmentMode.ROOM_CONTENT)),
+        ]
+        if RENOWN_GOAL not in goals:
+            operations.append(
+                SetComponent(
+                    character.id,
+                    GoalComponent(active_goals=(*goals, RENOWN_GOAL)),
+                )
+            )
+        return planned(
+            MutationPlan(tuple(operations)),
+            lambda: CameraTrapSetEvent(
                 **ctx.event_base(
                     visibility=EventVisibility.ROOM,
                     actor_id=str(character_id),
                     room_id=str(room.id),
-                    target_ids=(str(camera.id),),
-                    camera_id=str(camera.id),
+                    target_ids=(str(camera.require()),),
+                    camera_id=str(camera.require()),
                 )
-            )
+            ),
         )
 
 

@@ -16,6 +16,7 @@ from bunnyland.core.commands import CommandCost, Lane, build_submitted_command
 from bunnyland.core.components import PerceptionComponent, WorldClockComponent
 from bunnyland.core.ecs import replace_component
 from bunnyland.core.handlers import HandlerContext
+from conftest import execute_handler
 
 from bunnyland_cryptidsim import (
     CryptidCaseComponent,
@@ -131,8 +132,8 @@ def test_sight_records_a_sighting_at_night():
     investigator = _investigator(actor.world, room)
     cryptid = spawn_cryptid(actor.world, room_id=room.id, name="mothman", elusiveness=0.3)
 
-    result = SightCryptidHandler().execute(
-        _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)})
+    result = execute_handler(
+        SightCryptidHandler(), _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)})
     )
 
     assert result.ok
@@ -154,8 +155,8 @@ def test_sight_opens_a_case_dossier():
     investigator = _investigator(actor.world, room)
     cryptid = spawn_cryptid(actor.world, room_id=room.id, name="mothman")
 
-    SightCryptidHandler().execute(
-        _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)})
+    execute_handler(
+        SightCryptidHandler(), _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)})
     )
 
     cases = list(actor.world.query().with_all([CryptidCaseComponent]).execute_entities())
@@ -173,8 +174,8 @@ def test_repeated_sightings_accumulate_in_one_case():
     cryptid = spawn_cryptid(actor.world, room_id=room.id, name="mothman")
     handler = SightCryptidHandler()
 
-    handler.execute(_ctx(actor, 0), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)}))
-    handler.execute(_ctx(actor, 1), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)}))
+    execute_handler(handler, _ctx(actor, 0), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)}))
+    execute_handler(handler, _ctx(actor, 1), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)}))
 
     cases = list(actor.world.query().with_all([CryptidCaseComponent]).execute_entities())
     assert len(cases) == 1
@@ -189,8 +190,8 @@ def test_sight_rejects_invalid_character():
     room = _room(actor.world)
     cryptid = spawn_cryptid(actor.world, room_id=room.id)
 
-    result = SightCryptidHandler().execute(
-        _ctx(actor), _cmd("???", {"cryptid_id": str(cryptid.id)})
+    result = execute_handler(
+        SightCryptidHandler(), _ctx(actor), _cmd("???", {"cryptid_id": str(cryptid.id)})
     )
 
     assert not result.ok
@@ -202,8 +203,8 @@ def test_sight_rejects_missing_character():
     room = _room(actor.world)
     cryptid = spawn_cryptid(actor.world, room_id=room.id)
 
-    result = SightCryptidHandler().execute(
-        _ctx(actor), _cmd("entity_9999", {"cryptid_id": str(cryptid.id)})
+    result = execute_handler(
+        SightCryptidHandler(), _ctx(actor), _cmd("entity_9999", {"cryptid_id": str(cryptid.id)})
     )
 
     assert not result.ok
@@ -215,8 +216,8 @@ def test_sight_rejects_invalid_cryptid_id():
     room = _room(actor.world)
     investigator = _investigator(actor.world, room)
 
-    result = SightCryptidHandler().execute(
-        _ctx(actor), _cmd(investigator.id, {"cryptid_id": "???"})
+    result = execute_handler(
+        SightCryptidHandler(), _ctx(actor), _cmd(investigator.id, {"cryptid_id": "???"})
     )
 
     assert not result.ok
@@ -228,8 +229,8 @@ def test_sight_rejects_missing_cryptid():
     room = _room(actor.world)
     investigator = _investigator(actor.world, room)
 
-    result = SightCryptidHandler().execute(
-        _ctx(actor), _cmd(investigator.id, {"cryptid_id": "entity_9999"})
+    result = execute_handler(
+        SightCryptidHandler(), _ctx(actor), _cmd(investigator.id, {"cryptid_id": "entity_9999"})
     )
 
     assert not result.ok
@@ -243,8 +244,8 @@ def test_sight_rejects_cryptid_out_of_range():
     investigator = _investigator(actor.world, room)
     cryptid = spawn_cryptid(actor.world, room_id=other.id)  # a different room
 
-    result = SightCryptidHandler().execute(
-        _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)})
+    result = execute_handler(
+        SightCryptidHandler(), _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)})
     )
 
     assert not result.ok
@@ -260,8 +261,8 @@ def test_sight_rejects_non_cryptid_target():
     )
     room.add_relationship(Contains(mode=ContainmentMode.ROOM_CONTENT), bystander.id)
 
-    result = SightCryptidHandler().execute(
-        _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(bystander.id)})
+    result = execute_handler(
+        SightCryptidHandler(), _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(bystander.id)})
     )
 
     assert not result.ok
@@ -274,8 +275,8 @@ def test_sight_rejects_when_perception_inactive():
     investigator = _investigator(actor.world, room, perception=PerceptionComponent(active=False))
     cryptid = spawn_cryptid(actor.world, room_id=room.id)
 
-    result = SightCryptidHandler().execute(
-        _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)})
+    result = execute_handler(
+        SightCryptidHandler(), _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)})
     )
 
     assert not result.ok
@@ -289,8 +290,8 @@ def test_sight_rejects_in_clear_daylight():
     investigator = _investigator(actor.world, room)
     cryptid = spawn_cryptid(actor.world, room_id=room.id)
 
-    result = SightCryptidHandler().execute(
-        _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)})
+    result = execute_handler(
+        SightCryptidHandler(), _ctx(actor), _cmd(investigator.id, {"cryptid_id": str(cryptid.id)})
     )
 
     assert not result.ok

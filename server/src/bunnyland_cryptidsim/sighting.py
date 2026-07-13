@@ -15,8 +15,9 @@ Validation order follows the project convention: invalid id -> missing entity ->
 from __future__ import annotations
 
 import hashlib
+from dataclasses import replace
 
-from bunnyland.core import reachable_ids, spawn_entity
+from bunnyland.core import reachable_ids
 from bunnyland.core.actions import ActionArgument, ActionDefinition, ActionEffort, effort_cost
 from bunnyland.core.commands import Lane, SubmittedCommand
 from bunnyland.core.components import PerceptionComponent
@@ -24,15 +25,16 @@ from bunnyland.core.events import EventVisibility
 from bunnyland.core.handlers import (
     HandlerContext,
     HandlerResult,
-    ok,
+    planned,
     rejected,
     require_character,
     require_entity,
 )
+from bunnyland.core.mutations import AddEntity, MutationPlan, SetComponent
 
 from .bait import bait_bonus
-from .cases import record_sighting
-from .components import CryptidComponent, SightingComponent
+from .cases import find_case
+from .components import CryptidCaseComponent, CryptidComponent, SightingComponent
 from .conditions import is_concealing, room_light_level
 from .events import SightingRecordedEvent
 from .flap import flap_clarity_bonus
@@ -137,16 +139,51 @@ class SightCryptidHandler:
             bonus=environment_clarity_bonus(ctx.world, character_id, cryptid, room),
         )
         clear = is_clear(clarity)
-        self._spawn_sighting(ctx, character_id, cryptid_id, details, clarity, clear)
-        record_sighting(
-            ctx.world,
-            investigator_id=str(character_id),
-            cryptid_id=str(cryptid_id),
-            cryptid_name=details.name,
-            clarity=clarity,
-            clear=clear,
-        )
-        return ok(
+        case_entity = find_case(ctx.world, str(character_id), str(cryptid_id))
+        operations = [
+            AddEntity(
+                (
+                    SightingComponent(
+                        cryptid_id=str(cryptid_id),
+                        cryptid_name=details.name,
+                        investigator_id=str(character_id),
+                        clarity=clarity,
+                        recorded_at_epoch=ctx.epoch,
+                        clear=clear,
+                    ),
+                )
+            )
+        ]
+        if case_entity is None:
+            operations.append(
+                AddEntity(
+                    (
+                        CryptidCaseComponent(
+                            investigator_id=str(character_id),
+                            cryptid_id=str(cryptid_id),
+                            cryptid_name=details.name,
+                            sighting_count=1,
+                            clear_count=1 if clear else 0,
+                            best_clarity=clarity,
+                        ),
+                    )
+                )
+            )
+        else:
+            case = case_entity.get_component(CryptidCaseComponent)
+            operations.append(
+                SetComponent(
+                    case_entity.id,
+                    replace(
+                        case,
+                        sighting_count=case.sighting_count + 1,
+                        clear_count=case.clear_count + (1 if clear else 0),
+                        best_clarity=max(case.best_clarity, clarity),
+                    ),
+                )
+            )
+        return planned(
+            MutationPlan(tuple(operations)),
             SightingRecordedEvent(
                 **ctx.event_base(
                     visibility=EventVisibility.ROOM,
@@ -158,23 +195,7 @@ class SightCryptidHandler:
                     clarity=clarity,
                     clear=clear,
                 )
-            )
-        )
-
-    @staticmethod
-    def _spawn_sighting(ctx, character_id, cryptid_id, details, clarity, clear) -> None:
-        spawn_entity(
-            ctx.world,
-            [
-                SightingComponent(
-                    cryptid_id=str(cryptid_id),
-                    cryptid_name=details.name,
-                    investigator_id=str(character_id),
-                    clarity=clarity,
-                    recorded_at_epoch=ctx.epoch,
-                    clear=clear,
-                )
-            ],
+            ),
         )
 
 

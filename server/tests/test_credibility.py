@@ -19,6 +19,7 @@ from bunnyland.foundation.persona.mechanics import GoalComponent
 from bunnyland.imagegen.components import ImageRequestComponent
 from bunnyland.prompts import ComponentPromptContext, PromptPerspective
 from bunnyland.simpacks.lifesim.mechanics import ReputationComponent
+from conftest import execute_handler
 
 from bunnyland_cryptidsim.cases import CryptidConfirmationConsequence, record_sighting
 from bunnyland_cryptidsim.components import CryptidCaseComponent
@@ -298,7 +299,8 @@ def test_doubt_makes_a_skeptic():
         clarity=0.2,
         clear=False,
     )
-    result = DoubtCryptidHandler().execute(
+    result = execute_handler(
+        DoubtCryptidHandler(),
         HandlerContext(world=actor.world, epoch=0),
         _doubt_cmd(
             skeptic.id, {"investigator_id": str(investigator.id), "cryptid_id": str(cryptid.id)}
@@ -310,7 +312,8 @@ def test_doubt_makes_a_skeptic():
 
 def test_doubt_rejects_invalid_skeptic():
     actor = WorldActor()
-    result = DoubtCryptidHandler().execute(
+    result = execute_handler(
+        DoubtCryptidHandler(),
         HandlerContext(world=actor.world, epoch=0),
         _doubt_cmd("???", {"investigator_id": "entity_1", "cryptid_id": "c"}),
     )
@@ -321,7 +324,8 @@ def test_doubt_rejects_missing_investigator():
     actor = WorldActor()
     room = _room(actor.world)
     skeptic = _character(actor.world, room)
-    result = DoubtCryptidHandler().execute(
+    result = execute_handler(
+        DoubtCryptidHandler(),
         HandlerContext(world=actor.world, epoch=0),
         _doubt_cmd(skeptic.id, {"investigator_id": "entity_9999", "cryptid_id": "c"}),
     )
@@ -333,7 +337,8 @@ def test_doubt_rejects_non_character_investigator():
     room = _room(actor.world)
     skeptic = _character(actor.world, room)
     rock = spawn_entity(actor.world, [IdentityComponent(name="rock", kind="item")])
-    result = DoubtCryptidHandler().execute(
+    result = execute_handler(
+        DoubtCryptidHandler(),
         HandlerContext(world=actor.world, epoch=0),
         _doubt_cmd(skeptic.id, {"investigator_id": str(rock.id), "cryptid_id": "c"}),
     )
@@ -345,7 +350,8 @@ def test_doubt_rejects_when_no_case_exists():
     room = _room(actor.world)
     investigator = _character(actor.world, room, name="Vin")
     skeptic = _character(actor.world, room, name="Doubt")
-    result = DoubtCryptidHandler().execute(
+    result = execute_handler(
+        DoubtCryptidHandler(),
         HandlerContext(world=actor.world, epoch=0),
         _doubt_cmd(skeptic.id, {"investigator_id": str(investigator.id), "cryptid_id": "c"}),
     )
@@ -371,7 +377,8 @@ def test_doubt_rejects_confirmed_case():
     from bunnyland.core.ecs import replace_component
 
     replace_component(case, _replace(case.get_component(CryptidCaseComponent), confirmed=True))
-    result = DoubtCryptidHandler().execute(
+    result = execute_handler(
+        DoubtCryptidHandler(),
         HandlerContext(world=actor.world, epoch=0),
         _doubt_cmd(
             skeptic.id, {"investigator_id": str(investigator.id), "cryptid_id": str(cryptid.id)}

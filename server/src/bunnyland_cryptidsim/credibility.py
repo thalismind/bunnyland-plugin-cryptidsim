@@ -29,14 +29,15 @@ from bunnyland.core.events import DomainEvent, EventVisibility
 from bunnyland.core.handlers import (
     HandlerContext,
     HandlerResult,
-    ok,
+    planned,
     rejected,
     require_character,
     require_entity,
 )
+from bunnyland.core.mutations import AddEdge, MutationPlan
 from bunnyland.foundation.history.mechanics import record_world_history
 from bunnyland.foundation.persona.mechanics import GoalComponent
-from bunnyland.foundation.social.mechanics import adjust_bond, bond_between
+from bunnyland.foundation.social.mechanics import adjust_bond, adjusted_bond, bond_between
 from bunnyland.imagegen.components import ImageRequestComponent
 from bunnyland.imagegen.spec import ImagePurpose
 from bunnyland.prompts import ComponentPromptContext
@@ -236,8 +237,21 @@ class DoubtCryptidHandler:
         case = case_entity.get_component(CryptidCaseComponent)
         if case.confirmed:
             return rejected("the evidence is undeniable; there is nothing to dispute")
-        adjust_bond(ctx.world, skeptic_id, investigator_id, SKEPTIC_DELTAS)
-        return ok(
+        return planned(
+            MutationPlan(
+                (
+                    AddEdge(
+                        skeptic_id,
+                        investigator_id,
+                        adjusted_bond(
+                            ctx.world,
+                            skeptic_id,
+                            investigator_id,
+                            SKEPTIC_DELTAS,
+                        ),
+                    ),
+                )
+            ),
             CryptidDoubtedEvent(
                 **ctx.event_base(
                     visibility=EventVisibility.ROOM,
@@ -247,7 +261,7 @@ class DoubtCryptidHandler:
                     investigator_id=str(investigator_id),
                     cryptid_id=cryptid_id,
                 )
-            )
+            ),
         )
 
 

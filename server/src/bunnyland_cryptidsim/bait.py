@@ -26,10 +26,11 @@ from bunnyland.core.events import DomainEvent, EventVisibility
 from bunnyland.core.handlers import (
     HandlerContext,
     HandlerResult,
-    ok,
+    planned,
     rejected,
     require_character,
 )
+from bunnyland.core.mutations import AddEdge, AddEntity, EntityReference, MutationPlan
 from pydantic.dataclasses import dataclass
 from relics import Component, Entity, World
 
@@ -137,27 +138,42 @@ class PlaceBaitHandler:
             return rejected("you are nowhere to set out bait")
         kind = str(command.payload.get("kind", "carrion")).strip() or "carrion"
         habitat = str(command.payload.get("habitat", "any")).strip() or "any"
-        bait = spawn_bait(
-            ctx.world,
-            room_id=room.id,
-            kind=kind,
-            habitat=habitat,
-            potency=0.5,
-            placed_by=str(character_id),
-            placed_at_epoch=ctx.epoch,
-        )
-        return ok(
-            BaitPlacedEvent(
+        bait = EntityReference()
+        return planned(
+            MutationPlan(
+                (
+                    AddEntity(
+                        (
+                            IdentityComponent(
+                                name=f"{kind} bait",
+                                kind="item",
+                                tags=("cryptidsim", "bait"),
+                            ),
+                            PortableComponent(can_pick_up=True),
+                            BaitComponent(
+                                kind=kind,
+                                potency=0.5,
+                                habitat=habitat,
+                                placed_by=str(character_id),
+                                placed_at_epoch=ctx.epoch,
+                            ),
+                        ),
+                        reference=bait,
+                    ),
+                    AddEdge(room.id, bait, Contains(mode=ContainmentMode.ROOM_CONTENT)),
+                )
+            ),
+            lambda: BaitPlacedEvent(
                 **ctx.event_base(
                     visibility=EventVisibility.ROOM,
                     actor_id=str(character_id),
                     room_id=str(room.id),
-                    target_ids=(str(bait.id),),
-                    bait_id=str(bait.id),
+                    target_ids=(str(bait.require()),),
+                    bait_id=str(bait.require()),
                     kind=kind,
                     habitat=habitat,
                 )
-            )
+            ),
         )
 
 

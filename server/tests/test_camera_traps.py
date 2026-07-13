@@ -17,6 +17,7 @@ from bunnyland.core.components import DeadComponent, WorldClockComponent
 from bunnyland.core.ecs import replace_component
 from bunnyland.core.handlers import HandlerContext
 from bunnyland.foundation.persona.mechanics import GoalComponent
+from conftest import execute_handler
 
 from bunnyland_cryptidsim.bait import spawn_bait
 from bunnyland_cryptidsim.camera_traps import (
@@ -81,8 +82,8 @@ def test_set_camera_trap_happy_and_aspires_to_renown():
     actor = WorldActor()
     room = _room(actor.world)
     character = _character(actor.world, room)
-    result = SetCameraTrapHandler().execute(
-        HandlerContext(world=actor.world, epoch=3), _cmd(character.id)
+    result = execute_handler(
+        SetCameraTrapHandler(), HandlerContext(world=actor.world, epoch=3), _cmd(character.id)
     )
     assert result.ok
     assert isinstance(result.events[0], CameraTrapSetEvent)
@@ -94,7 +95,9 @@ def test_set_camera_trap_happy_and_aspires_to_renown():
 
 def test_set_camera_trap_rejects_invalid_character():
     actor = WorldActor()
-    result = SetCameraTrapHandler().execute(HandlerContext(world=actor.world, epoch=0), _cmd("???"))
+    result = execute_handler(
+        SetCameraTrapHandler(), HandlerContext(world=actor.world, epoch=0), _cmd("???")
+    )
     assert not result.ok and result.reason == "invalid character id"
 
 
@@ -103,8 +106,8 @@ def test_set_camera_trap_rejects_no_room():
     character = spawn_entity(
         actor.world, [IdentityComponent(name="Vin", kind="character"), CharacterComponent()]
     )
-    result = SetCameraTrapHandler().execute(
-        HandlerContext(world=actor.world, epoch=0), _cmd(character.id)
+    result = execute_handler(
+        SetCameraTrapHandler(), HandlerContext(world=actor.world, epoch=0), _cmd(character.id)
     )
     assert not result.ok and result.reason == "you have nowhere to set a camera trap"
 
@@ -147,9 +150,7 @@ def test_camera_bait_in_room_raises_capture_clarity():
         actor.world, room_id=room.id, name="mothman", elusiveness=0.3, habitat="swamp"
     )
     spawn_bait(actor.world, room_id=room.id, habitat="swamp", potency=1.0)
-    camera = spawn_camera_trap(
-        actor.world, room_id=room.id, placed_by=str(investigator.id)
-    )
+    camera = spawn_camera_trap(actor.world, room_id=room.id, placed_by=str(investigator.id))
     baited = CameraTrapConsequence().process(actor.world, 100)[0].clarity
     details = cryptid.get_component(CryptidComponent)
     plain = sighting_clarity(

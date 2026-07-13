@@ -11,6 +11,7 @@ from bunnyland.core import (
 )
 from bunnyland.core.commands import CommandCost, Lane, build_submitted_command
 from bunnyland.core.handlers import HandlerContext
+from conftest import execute_handler
 
 from bunnyland_cryptidsim.bait import (
     BAIT_ACTION_DEFINITIONS,
@@ -114,7 +115,8 @@ def test_place_bait_happy_path():
     actor = WorldActor()
     room = _room(actor.world)
     character = _character(actor.world, room)
-    result = PlaceBaitHandler().execute(
+    result = execute_handler(
+        PlaceBaitHandler(),
         HandlerContext(world=actor.world, epoch=5),
         _cmd(character.id, {"kind": "carrion", "habitat": "swamp"}),
     )
@@ -131,7 +133,8 @@ def test_place_bait_defaults_blank_payload():
     actor = WorldActor()
     room = _room(actor.world)
     character = _character(actor.world, room)
-    result = PlaceBaitHandler().execute(
+    result = execute_handler(
+        PlaceBaitHandler(),
         HandlerContext(world=actor.world, epoch=0),
         _cmd(character.id, {"kind": "  ", "habitat": ""}),
     )
@@ -143,15 +146,17 @@ def test_place_bait_defaults_blank_payload():
 
 def test_place_bait_rejects_invalid_character():
     actor = WorldActor()
-    result = PlaceBaitHandler().execute(HandlerContext(world=actor.world, epoch=0), _cmd("???", {}))
+    result = execute_handler(
+        PlaceBaitHandler(), HandlerContext(world=actor.world, epoch=0), _cmd("???", {})
+    )
     assert not result.ok and result.reason == "invalid character id"
 
 
 def test_place_bait_rejects_character_with_no_room():
     actor = WorldActor()
     character = _character(actor.world)  # not placed in any room
-    result = PlaceBaitHandler().execute(
-        HandlerContext(world=actor.world, epoch=0), _cmd(character.id, {})
+    result = execute_handler(
+        PlaceBaitHandler(), HandlerContext(world=actor.world, epoch=0), _cmd(character.id, {})
     )
     assert not result.ok and result.reason == "you are nowhere to set out bait"
 
