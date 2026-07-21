@@ -3,11 +3,11 @@ name = "bunnyland-cryptidsim"
 version = "0.2.0"
 description = "Out-of-tree Bunnyland plugin: a cryptozoology expansion pack — rare, elusive mystery creatures, uncertain sightings, and a confirm-over-time case-file loop."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.15"
 dependencies = [
-    "bunnyland",
+    "bunnyland>=1.0.0rc2,<2",
     "pydantic>=2.0",
-    "relics",
+    "relics-ecs>=0.1.1,<0.2",
 ]
 
 [project.entry-points."bunnyland.plugins"]
